@@ -1,6 +1,13 @@
 package com.majun.test.weixin.dto;
 
-public class JsApiTicketDto {
+import java.io.Serializable;
+
+public class JsApiTicketDto implements Serializable {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -2840881156979978593L;
 
 	private String ticket;
 	
