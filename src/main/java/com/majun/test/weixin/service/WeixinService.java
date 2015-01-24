@@ -79,7 +79,7 @@ public class WeixinService {
 		config.setNonceStr(Sha1Util.getNonceStr());
 		config.setTimestamp(Sha1Util.getTimeStamp());
 		JsApiTicketDto jsapi = getJsapi();
-		config.setJsapi_ticket(jsapi.getTicket());
+		config.setJsapi_ticket("bxLdikRXVbTPdHSM05e5u1M4mowqNducD7Yb4LVRXMp_eNJFYLPmyym0qHz2qEOAPM-5DNKvqiOUlhRxZzQL9w");
 		config.setExpires_in(jsapi.getExpires_in());
 		
 		
@@ -93,7 +93,6 @@ public class WeixinService {
 		String waitSignStr = getContent(param);
 		String sign = Sha1Util.getSha1(waitSignStr);
 		config.setSignature(sign);
-		
 		return config;
 	}
 	
