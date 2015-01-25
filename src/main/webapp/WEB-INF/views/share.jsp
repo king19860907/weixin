@@ -4,17 +4,27 @@
 <html>
     <head>
         <title>测试分享</title>
+        <script type="text/javascript" src="http://css.yesmyimg.com/20140808/newWeb/js/lib/jquery-1.4.4.min.js?"></script>
         <script src="http://res.wx.qq.com/open/js/jweixin-1.0.0.js"></script>
     </head>
     <body>
     	${config}<br/>
     	
-    	<a href="javascript:show();"><font size="30">显示</font></a><br/>
+    	<a href="javascript:choosePhoto();"><font size="30">选取照片</font></a><br/><br/>
     	
-    	<a href="javascript:choosePhoto();"><font size="30">选取照片</font></a><br/>
+    	<a href="javascript:void(0);" id="uploadImage"><font size="30">上传照片</font></a><br/><br/>
+    	<img alt="" src=""/>
+    	
+    	<a href="javascript:void(0);" id="downloadImage"><font size="30">下载照片</font></a><br/><br/>
     	
     </body>
     <script type="text/javascript">
+    	/**
+    	 *	微信jssdkdemo
+    	 *	http://mp.weixin.qq.com/wiki/7/aaa137b55fb2e0456bf8dd9148dd613f.html
+    	 *
+    	 **/
+    
 	    wx.config({
 	        debug: true, // 开启调试模式,调用的所有api的返回值会在客户端alert出来，若要查看传入的参数，可以在pc端打开，参数信息会通过log打出，仅在pc端时才会打印。
 	        appId: '${config.appId}', // 必填，公众号的唯一标识
@@ -24,10 +34,10 @@
 	        jsApiList: [
 				'onMenuShareTimeline',
 				'onMenuShareAppMessage',
-				'showMenuItems',
-				'hideMenuItems',
-				'hideAllNonBaseMenuItem',
-				'chooseImage'
+				'chooseImage',
+				'previewImage',
+				'uploadImage',
+				'downloadImage'
 	        ] // 必填，需要使用的JS接口列表，所有JS接口列表见附录2
 	    });
 	    
@@ -59,44 +69,84 @@
 	    	    }
 	    	});
 	    	
-	    	/* wx.hideMenuItems({
-	    	    menuList: [
-	    	     'menuItem:readMode',
-	    	     'menuItem:share:email',
-	    	     'menuItem:exposeArticle',
-	    	     'menuItem:setFont',
-	    	     'menuItem:share:qq',
-	    	     'menuItem:copyUrl',
-	    	     'menuItem:refresh'
-	    	    ] // 要隐藏的菜单项，所有menu项见附录3
-	    	});
-	    	
-	    	wx.showMenuItems({
-	    	    menuList: [
-	    	               'menuItem:share:qq'
-	    	    ] // 要显示的菜单项，所有menu项见附录3
-	    	}); */
-	    	
-	    	wx.hideAllNonBaseMenuItem({});
 	    });
 	    
-	    function show(){
-	    	wx.showMenuItems({
-	    	    menuList: [
-	    	               'menuItem:share:weiboApp',
-	    	               'menuItem:share:qq',
-	    	               'menuItem:dayMode'
-	    	    ] // 要显示的菜单项，所有menu项见附录3
-	    	});
-	    }
-	    
+	    var localIds;
 	    function choosePhoto(){
 	    	wx.chooseImage({
 	    	    success: function (res) {
-	    	        var localIds = res.localIds; // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片
-	    	    	alert(localIds);
+	    	        localIds = res.localIds; // 返回选定照片的本地ID列表，localId可以作为img标签的src属性显示图片
 	    	    }
 	    	});
 	    }
+	    
+		var serverIds = new Array();	    
+	    //上传图片
+	    $("#uploadImage").click(function(){
+	    	var i=0;
+		    function uploadPhoto(){
+		    	if(localIds.length == 0){
+		    		alert("请先选取照片");
+		    	}else{
+		    		wx.uploadImage({
+			    		localId:localIds[i],	//需要上传的图片的本地ID，由chooseImage接口获得
+			   			isHowProgressTips:1,	//默认为1，显示进度提示
+			    	    success: function (res) {
+			    	    	var serverId = res.serverId;	//返回图片的服务器端id
+			    	    	serverIds.push(serverId);
+			    	    	if(i<localIds.length-1){
+			    	    		i=i+1;
+			    	    		uploadPhoto();
+			    	    	}else{
+			    	    		downloadMedia();
+			    	    	}
+				    	},
+			    	    fail:function(res){
+			    	    	alert(JSON.stringify(res));
+			    	    }
+			    	});
+		    	}
+		    }
+		    uploadPhoto();
+	    });
+	    
+	    //下载图片
+	    $("#downloadImage").click(function(){
+	    	var i =0;
+	    	function downloadPhoto(){
+	    		wx.downloadImage({
+		    	    serverId: serverIds[i], // 需要下载的图片的服务器端ID，由uploadImage接口获得
+		    	    isShowProgressTips: 1, // 默认为1，显示进度提示
+		    	    success: function (res) {
+		    	        var localId = res.localId; // 返回图片下载后的本地ID
+		    	        if(i<serverIds.length-1){
+		    	    		i++;
+		    	    		downloadPhoto();
+		    	    	}
+		    	    }
+		    	});
+	    	}
+	    	downloadPhoto();
+	    });
+	 
+	    //从微信下载图片到服务器
+	    function downloadMedia(){
+	    	$.ajax( {    
+	    	    url:'/weixin/downloadMedia.do',// 跳转到 action    
+	    	    data:{    
+	    	       serverIds:serverIds
+	    	    },    
+	    	    type:'post',    
+	    	    cache:false,    
+	    	    success:function(data) {    
+	    	       var jsonData = $.parseJSON(data);
+	    	       for(var i =0;i<jsonData.length;i++){
+	    	    	   var html = "<img alt='' src='"+jsonData[i]+"'/>";
+	    	    	   $("#uploadImage").after(html);
+	    	       }
+x	    	    }
+	    	});  
+	    }
+	    
     </script>
 </html>

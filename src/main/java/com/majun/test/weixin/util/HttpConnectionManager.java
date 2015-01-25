@@ -1,5 +1,8 @@
 package com.majun.test.weixin.util;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -304,6 +307,89 @@ public class HttpConnectionManager {
 					reader = null;
 				} catch (IOException e) {
 					logger.error("inputStream.close()", e);
+				}
+			}
+			httpGet.releaseConnection();
+			httpClient.clearRequestInterceptors();
+			httpClient.clearResponseInterceptors();
+			httpClient.getConnectionManager().closeExpiredConnections();
+			httpClient.getConnectionManager().closeIdleConnections(1,
+					TimeUnit.NANOSECONDS);
+		}
+		return result;
+
+	}
+	
+	public List<String> doHttpDownload(String url,String descFilePath) {
+		List<String> result = new ArrayList<String>();
+		HttpGet httpGet = new HttpGet(url);
+		httpGet.addHeader("Connection", "close");
+		DefaultHttpClient httpClient = getClient();
+		InputStream inputStream = null;
+		DataInputStream dataInputStream = null;
+		FileOutputStream fos = null;
+		try {
+			HttpResponse response = httpClient.execute(httpGet);
+			HttpEntity entity = response.getEntity();
+			inputStream = entity.getContent();
+			
+			dataInputStream = new DataInputStream(inputStream);
+			byte[] buffer = new byte[1024];
+			int length;
+			
+			fos = new FileOutputStream(new File(descFilePath));
+			//开始填充数据
+			while((length=dataInputStream.read(buffer))>0){
+				fos.write(buffer, 0, length);
+			}
+ 			
+			inputStream.close();
+			inputStream = null;
+			logger.info("response.getStatusLine().getStatusCode():"
+					+ response.getStatusLine().getStatusCode());
+			if (response.getStatusLine().getStatusCode() != 200) {
+				result.clear();
+				result.add("error");
+				logger.info("response.getStatusLine().getStatusCode():"
+						+ response.getStatusLine().getStatusCode());
+			}
+		} catch (UnsupportedEncodingException e) {
+			logger.error("doHttpPost().UnsupportedEncodingException=", e);
+		} catch (ClientProtocolException e) {
+			logger.error("doHttpPost().ClientProtocolException=", e);
+		} catch (IOException e) {
+			if (e.getMessage().equalsIgnoreCase("Read timed out")) {
+				result.add("success");
+				return result;
+			}
+			logger.error("doHttpPost().IOException=", e);
+			e.printStackTrace();
+		} catch (Exception e) {
+			logger.error("doHttpPost().Exception=", e);
+			e.printStackTrace();
+		} finally {
+			if (inputStream != null) {
+				try {
+					inputStream.close();
+					inputStream = null;
+				} catch (IOException e) {
+					logger.error("inputStream.close()", e);
+				}
+			}
+			if (dataInputStream != null) {
+				try {
+					dataInputStream.close();
+					dataInputStream = null;
+				} catch (IOException e) {
+					logger.error("dataInputStream.close()", e);
+				}
+			}
+			if (fos != null) {
+				try {
+					fos.close();
+					fos = null;
+				} catch (IOException e) {
+					logger.error("fileOutPutStream.close()", e);
 				}
 			}
 			httpGet.releaseConnection();

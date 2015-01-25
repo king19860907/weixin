@@ -14,6 +14,7 @@ import javax.annotation.Resource;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import com.google.gson.Gson;
 import com.majun.test.weixin.dto.AccessTokenDto;
@@ -34,6 +35,8 @@ public class WeixinService {
 	
 	private String getJsApiTicketUrl="https://api.weixin.qq.com/cgi-bin/ticket/getticket?access_token={0}&type=jsapi";
 
+	private String getMediaUrl="http://file.api.weixin.qq.com/cgi-bin/media/get?access_token={0}&media_id={1}";
+	
 	private HttpConnectionManager http = new HttpConnectionManager();
 	
 	private String access_token_key = "weixin_access_token";
@@ -79,7 +82,7 @@ public class WeixinService {
 		config.setNonceStr(Sha1Util.getNonceStr());
 		config.setTimestamp(Sha1Util.getTimeStamp());
 		JsApiTicketDto jsapi = getJsapi();
-		config.setJsapi_ticket("bxLdikRXVbTPdHSM05e5u1M4mowqNducD7Yb4LVRXMp_eNJFYLPmyym0qHz2qEOAPM-5DNKvqiOUlhRxZzQL9w");
+		config.setJsapi_ticket(jsapi.getTicket());
 		config.setExpires_in(jsapi.getExpires_in());
 		
 		
@@ -94,6 +97,29 @@ public class WeixinService {
 		String sign = Sha1Util.getSha1(waitSignStr);
 		config.setSignature(sign);
 		return config;
+	}
+	
+	public List<String> downloadMedia(List<String> serverIds,String basePath){
+		if(!CollectionUtils.isEmpty(serverIds)){
+			List<String> results = new ArrayList<>(serverIds.size());
+			for(String serverId:serverIds){
+				results.add(downloadMedia(serverId,basePath));
+			}
+			return results;
+		}
+		return null;
+	}
+	
+	/**
+	 * 下载多媒体
+	 * http://mp.weixin.qq.com/wiki/12/58bfcfabbd501c7cd77c19bd9cfa8354.html
+	 * @param serverId
+	 * @return
+	 */
+	public String downloadMedia(String serverId,String basePath){
+		String url = MessageFormat.format(getMediaUrl, getToken().getAccess_token(),serverId);
+		http.doHttpDownload(url,basePath+serverId+".jpg");
+		return serverId+".jpg";
 	}
 	
 	/**

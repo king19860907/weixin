@@ -1,8 +1,11 @@
 package com.majun.test.weixin.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Resource;
@@ -14,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.google.gson.Gson;
@@ -68,6 +72,27 @@ public class WeixinController {
 		ShareConfigDto config = weixinService.getShareConfig(url);
 		model.addAttribute("config", config);
 		return "share";
+	}
+	
+	@RequestMapping(method=RequestMethod.POST,value="/downloadMedia")
+	@ResponseBody
+	public String downloadMedia(@RequestParam("serverIds[]")String[] serverIds,HttpServletRequest request){
+		System.out.println("serverIds:"+serverIds);
+		String basePath=request.getServletContext().getRealPath("/")+"";
+		List<String> results = converToUrls(weixinService.downloadMedia(Arrays.asList(serverIds),basePath), request.getServerName());
+		Gson gson = new Gson();
+		System.out.println(results);
+		return gson.toJson(results);
+	}
+	
+	private List<String> converToUrls(List<String> names,String serverName){
+		List<String> result = new ArrayList<String>();
+		if(!CollectionUtils.isEmpty(names)){
+			for(String name : names){
+				result.add("http://"+serverName+"/"+name);
+			}
+		}
+		return result;
 	}
 	
 	 /**
