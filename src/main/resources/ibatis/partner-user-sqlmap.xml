@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" "http://ibatis.apache.org/dtd/sql-map-2.dtd" >
+<sqlMap>
+
+	<typeAlias type="com.majun.test.weixin.dto.PartnersUserDTO" alias="PartnersUserDTO" />
+
+	<insert id="addPartnersUser" parameterClass="PartnersUserDTO">
+		insert into M_PARTNERS_USER(id,login_name,member_id,create_time,create_ip,partners_source,source_user_id,cancel_flag,openid,attach,bonus)
+		values (SEQ_M_PARTNERS_USER_ID.Nextval,#loginName#,#memberId#,#createTime#,#createIP#,#partnersSource#,#sourceUserId#,#cancelFlag#,#openId#,#attach#,#bonus#)
+		<selectKey resultClass="long" keyProperty="id"> select SEQ_M_PARTNERS_USER_ID.CURRVAL AS ID FROM DUAL </selectKey>
+	</insert>
+
+</sqlMap>

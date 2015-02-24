@@ -1,6 +1,7 @@
 package com.majun.test.weixin.service;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -8,11 +9,14 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.annotation.Resource;
+
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.google.gson.Gson;
+import com.majun.test.weixin.dao.PartnersUserDao;
 import com.majun.test.weixin.dto.SnsScope;
 import com.majun.test.weixin.util.HttpConnectionManager;
 
@@ -34,8 +38,16 @@ public class WeixinAuthService {
 	
 	private HttpConnectionManager http = new HttpConnectionManager();
 	
+	@Resource(name = "partnersUserDao")
+	private PartnersUserDao partnersUserDao;
+	
 	public String getAuthUrl(String redirectUri,String scope){
-		String url = MessageFormat.format(authUrl, appId,acceptCodeUrl,scope,redirectUri);
+		String url = null;
+		try {
+			url = MessageFormat.format(authUrl, appId,acceptCodeUrl,scope,URLEncoder.encode(redirectUri, "utf-8"));
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}
 		return url;
 	}
 	
